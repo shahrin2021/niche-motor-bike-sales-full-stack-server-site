@@ -23,6 +23,8 @@ async function run(){
         const database = client.db('bikeSalesService');
         const productsCollection= database.collection('bikeProducts');
         const orderCollection= database.collection('orders');
+        const usersCollection= database.collection('users');
+        const reviewCollection= database.collection('reviews');
 
         // get product
         app.get('/products' , async(req, res)=>{
@@ -34,10 +36,37 @@ async function run(){
 // get single product
         app.get('/products/:id', async(req, res)=>{
             const id = req.params.id;
+            console.log(id)
             const query = {_id: ObjectId(id)};
             const product= await productsCollection.findOne(query);
             res.json(product)
         });
+
+        app.post('/products', async(req, res)=>{
+            const cursor = req.body;
+            const order = await productsCollection.insertOne(cursor);
+            res.json(order)
+        });
+
+        app.put('/products/:id',async(req, res)=>{
+            const id = req.params.id;
+            const updateProduct= req.body;
+            const query = {_id:ObjectId(id)};
+            const options={ upsert: true };
+            const updateDoc ={
+                $set:{
+                    name:updateProduct.name,
+                    price:updateProduct.price,
+                    img:updateProduct.img,
+                    stock:updateProduct.stock
+                }
+            }
+            const result = await productsCollection.updateOne(query, updateDoc, options );
+                  res.json(result)
+
+        })
+
+       
 
         // post orders
 
@@ -60,10 +89,98 @@ async function run(){
 
         });
 
+        // get by id
+
+        app.get('/orders/:id', async(req, res)=>{
+            const id = req.params.id;
+            const query= {_id :ObjectId(id) }
+            const product = await orderCollection.findOne(query);
+            res.json(product)
+        })
+
+        // delete 
+
+        app.delete('/orders/:id',async (req, res)=>{
+            const id = req.params.id;
+            const query = {_id:ObjectId(id) };
+            const result = await orderCollection.deleteOne(query)
+            res.json(result)
+        });
+
+
+         // get user
+         app.get('/users/:email', async(req, res)=>{
+            const email= req.params.email;
+            const query= {email: email};
+            const user = await usersCollection.findOne(query)
+            let isAdmin =false;
+            if(user?.role === 'admin'){
+                isAdmin=true;
+            }
+            console.log(isAdmin)
+            res.json({admin:isAdmin})
+        });
+
+        // post user
+        app.post('/users', async(req, res)=>{
+            const user= req.body;
+            const result = await usersCollection.insertOne(user);
+            res.json(result)
+
+        })
+
+        app.put('/users', async(req, res)=>{
+            const user= req.body;
+            const filter = {email: user.email};
+            const option = {upsert:true}
+            const updateDoc={
+                $set:user
+            }
+            const result = await usersCollection.updateOne(filter, updateDoc, option);
+            res.json(result)
+        })
+
+       
+
+      
+
+        
+        app.put('/users/admin', async(req, res)=>{
+            const user= req.body;
+            console.log(user)
+            const filter = {email: user.email};
+            const option = {upsert:true}
+            const updateDoc={
+                $set:{role: 'admin'}
+            }
+            const result = await usersCollection.updateOne(filter, updateDoc,option);
+            console.log(result)
+            res.json(result)
+        });
+
+        // review post 
+
+
+        app.post('/reviews', async(req, res)=>{
+            const cursor = req.body;
+            const review = await reviewCollection.insertOne(cursor);
+            res.json(review)
+        });
+            // get reviews 
+        app.get('/reviews', async(req,res)=>{
+            const cursor = reviewCollection.find({});
+            const products = await cursor.toArray();
+            res.json(products)
+        });
+
+
     }finally{
         // await client.close()
     }
 }
+
+// DB_USER=nicshBikeSales
+// DB_PASS=dXBwC4p3laRYYbOk
 
 run().catch(console.dir);
 
