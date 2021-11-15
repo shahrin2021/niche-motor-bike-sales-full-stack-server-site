@@ -129,6 +129,13 @@ async function run(){
 
         })
 
+        app.get('/users' , async(req, res)=>{
+            const cursor = usersCollection.find({});
+            const products = await cursor.toArray();
+            res.json(products)
+
+        });
+
         app.put('/users', async(req, res)=>{
             const user= req.body;
             const filter = {email: user.email};
